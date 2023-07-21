@@ -1,0 +1,131 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong Game</title>
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #282c34; font-family: Arial, sans-serif; }
+        canvas { border: 1px solid white; }
+    </style>
+</head>
+<body>
+    <canvas id="pongCanvas" width="800" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById("pongCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // Define Ball
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 15,
+            speed: 4,
+            dx: 4,
+            dy: 4,
+            image: new Image(),
+            glowing: false
+        };
+        ball.image.src = 'ball.png';
+
+        // Define Paddles
+        const paddleImage = new Image();
+        paddleImage.src = 'paddle.png';
+        const paddleWidth = paddleImage.width, paddleHeight = paddleImage.height;
+        const player = { x: 0, y: canvas.height / 2 - paddleHeight / 2, dy: 4, score: 0 };
+        const computer = { x: canvas.width - paddleWidth, y: canvas.height / 2 - paddleHeight / 2, dy: 4, score: 0 };
+
+        // AI Logic
+        function moveComputerPaddle() {
+            const paddleMid = computer.y + paddleHeight / 2;
+            if (paddleMid < ball.y) {
+                computer.y += computer.dy;
+            } else {
+                computer.y -= computer.dy;
+            }
+        }
+
+        function drawBall() {
+            if (ball.glowing) {
+                ctx.fillStyle = 'red';
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius + 5, 0, Math.PI * 2, false);
+                ctx.fill();
+            }
+            ctx.drawImage(ball.image, ball.x - ball.radius, ball.y - ball.radius, ball.radius * 2, ball.radius * 2);
+        }
+
+        function drawPaddles() {
+            ctx.drawImage(paddleImage, player.x, player.y, paddleWidth, paddleHeight);
+            ctx.drawImage(paddleImage, computer.x, computer.y, paddleWidth, paddleHeight);
+        }
+
+        function drawScore() {
+            ctx.font = "24px Arial";
+            ctx.fillStyle = "white";
+            ctx.fillText(player.score, canvas.width / 4, 30);
+            ctx.fillText(computer.score, (3 * canvas.width) / 4, 30);
+        }
+
+        function moveBall() {
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            // Ball collision with top and bottom
+            if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
+                ball.dy *= -1; // Reverse ball direction
+            }
+            
+            // Ball collision with paddles
+            if (
+                (ball.dx > 0 && ball.x + ball.radius > computer.x && ball.y + ball.radius > computer.y && ball.y - ball.radius < computer.y + paddleHeight) ||
+                (ball.dx < 0 && ball.x - ball.radius < player.x + paddleWidth && ball.y + ball.radius > player.y && ball.y - ball.radius < player.y + paddleHeight)
+            ) {
+                ball.dx *= -1; // Reverse ball direction
+                ball.glowing = true;
+                setTimeout(() => ball.glowing = false, 100);
+            }
+
+            // Ball out of bounds (scoring)
+            if (ball.x + ball.radius < 0) {
+                computer.score++;
+                resetBall();
+            } else if (ball.x - ball.radius > canvas.width) {
+                player.score++;
+                resetBall();
+            }
+        }
+
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.dx *= -1;
+        }
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            moveComputerPaddle();
+            drawBall();
+            drawPaddles();
+            moveBall();
+            drawScore();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Player controls
+        document.addEventListener("keydown", function(event) {
+            switch (event.keyCode) {
+                case 87: // W key
+                    player.y -= player.dy * 2;
+                    break;
+                case 83: // S key
+                    player.y += player.dy * 2;
+                    break;
+            }
+        });
+
+        gameLoop();
+    </script>
+</body>
+</html>
